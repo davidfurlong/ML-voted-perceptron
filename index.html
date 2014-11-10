@@ -1,0 +1,38 @@
+<html>
+	<head>
+		<script src="https://code.jquery.com/jquery-2.1.1.min.js"><script>
+		<script type="text/javascript" src="digits/digit0.js"></script>
+		<script>
+			// loads all the data sets
+			var digits = [];
+			syncLoad(0);
+			function syncLoad(i){
+				$.get('digits/digit'+i+'.txt', function(data) {
+					    digits[i] = data.split('\n');
+					    console.log(i);
+					    digits[i].sort(function () {
+					    	return Math.random() - 0.5;
+					    });
+					    if(i==9)
+					    	finishedLoadingCB();
+					    else syncLoad(i+1);
+				});
+			}
+
+			function finishedLoadingCB(){
+				var dataSet = {};
+				for(var i = 0; i<10; i++){
+					dataSet[i] = {};
+					dataSet[i]["train"] = digits[i].splice(0,550); 
+					dataSet[i]["test"] = digits[i].splice(0,550);
+				}
+				console.log(dataSet);
+			}
+			
+		</script>
+	</head>
+	<body>
+		<h1>Voted Perceptron</h1>
+	</body>
+</html>
+
