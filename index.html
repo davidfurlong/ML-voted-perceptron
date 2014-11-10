@@ -9,7 +9,8 @@
 			function syncLoad(i){
 				$.get('digits/digit'+i+'.txt', function(data) {
 					    digits[i] = data.split('\n');
-					    console.log(i);
+
+					    // randomly sort the data set
 					    digits[i].sort(function () {
 					    	return Math.random() - 0.5;
 					    });
@@ -19,6 +20,7 @@
 				});
 			}
 
+			// callback when data is finished loading
 			function finishedLoadingCB(){
 				var dataSet = {};
 				for(var i = 0; i<10; i++){
@@ -28,11 +30,54 @@
 				}
 				console.log(dataSet);
 			}
-			
+		
+			// button listener
+			$(document).ready(function(){
+				$('#t-submit').click(function(){
+					if(dataSet){
+						$('#output').val(computeVotedPerceptron($('#t-value').val(),$('#tn-value')));
+					}
+					else {
+						alert('data not ready yet');
+					}
+				});
+			});
+
+			function computeVotedPerceptron(T || 2000, Tn || 50){ // fallbacks
+
+				var errors = []; // ixj, i!=j array of errors
+				// run perceptron on pairs of digits i!=j
+				for(var i = 0; i < 10; i++){
+					var j = i;
+					while(j < 10){
+						var weights = [0]; // 1 to T.
+						for(var k = 0; k < T; k++){
+							var votesFor = 0;
+							var votesAgainst = 0;
+							if(k % 2 == 0){ // actual digit is from i
+
+							}
+							else { // actual digit is from j
+
+							}
+
+							dataSet[i]
+						}
+						j++;
+					}
+				}
+				return(errors);
+			}
 		</script>
 	</head>
 	<body>
 		<h1>Voted Perceptron</h1>
+		<label>T Value:</label>
+		<input type="number" id="t-value">
+		<label>T* Value: (last n weights)</label>
+		<input type="number" id="tn-value">
+		<input type="submit" id="t-submit">
+		<span id="output"></span>
 	</body>
 </html>
 
