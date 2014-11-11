@@ -47,7 +47,7 @@
 			$(document).ready(function(){
 				$('#t-submit').click(function(){
 					if(dataSet){
-						$('#output').val(JSON.parse(computeVotedPerceptron($('#t-value').val(),$('#tn-value'))));
+						$('#output').val(JSON.stringify(computeVotedPerceptron($('#t-value').val(),$('#tn-value'))));
 					}
 					else {
 						alert('data not ready yet');
@@ -62,7 +62,7 @@
 
 				var errors = []; // ixj, i!=j array of errors
 				// run perceptron on pairs of digits i!=j
-				// train
+
 				for(var i = 0; i < 10; i++){ // i is 1
 					var j = i+1;
 					while(j < 10){ // j is 0
@@ -78,17 +78,55 @@
 						}
 						weights.push(math.matrix(cc));
 
-
 						var errorsPer = 0;
 
+						// train 
 						for(var t = 0; t < T; t++){ // t
 							// for getting values use T mod 550
 							if(t % 2 == 0){ // actual digit is from i
-								var x = dataSet[i]["train"][(t % 550)];
+								var x = dataSet[i]["train"][(parseInt(t/2) % 550)];
 								var y = 1; // i
 							}
 							else { // actual digit is from j
-								var x = dataSet[j]["train"][(t % 550)];
+								var x = dataSet[j]["train"][(parseInt(t/2) % 550)];
+								var y = 0; // j
+							}
+							var tallyOne = 0;
+							var tallyZero = 0;	
+							var c_x_t = math.multiply(weights[weights.length-1],x) >= 0 ? 1 : 0;
+							if(c_x_t == 1)
+								tallyOne++;
+							else
+								tallyZero++;
+							
+							// take a vote
+							var TnNumCheck = Math.min(t+1,Tn);
+							for(var w = weights.length-TnNumCheck; w < weights.length; w++){
+								if(math.multiply(weights[w],x) >= 0)
+									tallyOne++;
+								else 
+									tallyZero++;
+							}
+
+
+							var yhat = tallyOne >= tallyZero ? 1 : 0;
+							if(yhat == y){ // correct
+								weights.push(weights[weights.length-1]);
+							}
+							else { // false
+								weights.push(math.add(weights[weights.length-1],math.multiply(y,x)));
+							}	
+						}
+
+						// test
+						for(var t = 0; t < 1100; t++){ // t
+							// for getting values use T mod 550
+							if(t % 2 == 0){ // actual digit is from i
+								var x = dataSet[i]["test"][(t/2 % 550)];
+								var y = 1; // i
+							}
+							else { // actual digit is from j
+								var x = dataSet[j]["test"][(t/2 % 550)];
 								var y = 0; // j
 							}
 							var tallyOne = 0;
@@ -116,16 +154,16 @@
 							else { // false
 								errorsPer++;
 								weights.push(math.add(weights[weights.length-1],math.multiply(y,x)));
-							}
-							
-
+							}	
 						}
+
 						if(errors[i] == undefined)
 							errors[i] = [];
 						errors[i][j] = errorsPer;
 						j++;
 					}
 				}
+				console.log(errors);
 				return(errors);
 			}
 
@@ -139,7 +177,7 @@
 		<label>T* Value: (last n weights)</label>
 		<input type="number" id="tn-value">
 		<input type="submit" id="t-submit">
-		<span id="output"></span>
+		<h1 id="output"></h1>
 	</body>
 </html>
 
