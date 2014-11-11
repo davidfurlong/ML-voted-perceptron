@@ -1,29 +1,41 @@
 <html>
 	<head>
-		<script src="https://code.jquery.com/jquery-2.1.1.min.js"><script>
-		<script type="text/javascript" src="digits/digit0.js"></script>
+		<script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+		<script src="http://cdnjs.cloudflare.com/ajax/libs/mathjs/1.0.1/math.min.js"></script>
 		<script>
 			// loads all the data sets
 			var digits = [];
+			var dataSet = {};
+
 			syncLoad(0);
 			function syncLoad(i){
 				$.get('digits/digit'+i+'.txt', function(data) {
-					    digits[i] = data.split('\n');
-
-					    // randomly sort the data set
-					    digits[i].sort(function () {
-					    	return Math.random() - 0.5;
-					    });
-					    if(i==9)
-					    	finishedLoadingCB();
-					    else syncLoad(i+1);
+				    digits[i] = data.split('\n').map(function(el){ 
+				    // converts to matrix
+				    	var t = el.split(' ');
+				    	var te = [];
+				    	for(var k = 0; k < 16; k++){
+				    		var tem = [];
+				    		for(var l = 0; l < 16; l++){
+				    			tem.push(parseInt(t[k*16+l]));
+				    		}
+				    		te.push(math.matrix(tem));
+				    	}
+				    	return te;
+				    });
+				    // randomly sort the data set
+				    digits[i].sort(function () {
+				    	return Math.random() - 0.5;
+				    });
+				    if(i==9)
+				    	finishedLoadingCB();
+				    else syncLoad(i+1);
 				});
 			}
 
 			// callback when data is finished loading
 			function finishedLoadingCB(){
-				var dataSet = {};
-				for(var i = 0; i<10; i++){
+				for(var i = 0; i < 10; i++){
 					dataSet[i] = {};
 					dataSet[i]["train"] = digits[i].splice(0,550); 
 					dataSet[i]["test"] = digits[i].splice(0,550);
@@ -35,7 +47,7 @@
 			$(document).ready(function(){
 				$('#t-submit').click(function(){
 					if(dataSet){
-						$('#output').val(computeVotedPerceptron($('#t-value').val(),$('#tn-value')));
+						$('#output').val(JSON.parse(computeVotedPerceptron($('#t-value').val(),$('#tn-value'))));
 					}
 					else {
 						alert('data not ready yet');
@@ -43,31 +55,81 @@
 				});
 			});
 
-			function computeVotedPerceptron(T || 2000, Tn || 50){ // fallbacks
+			function computeVotedPerceptron(T, Tn){
+				T = parseInt(T) || 2000;
+				Tn = parseInt(Tn) || 50;
+				// fallbacks defined if empty.. Doesn't fallback if non number entered unfortunately
 
 				var errors = []; // ixj, i!=j array of errors
 				// run perceptron on pairs of digits i!=j
-				for(var i = 0; i < 10; i++){
-					var j = i;
-					while(j < 10){
-						var weights = [0]; // 1 to T.
-						for(var k = 0; k < T; k++){
-							var votesFor = 0;
-							var votesAgainst = 0;
-							if(k % 2 == 0){ // actual digit is from i
+				// train
+				for(var i = 0; i < 10; i++){ // i is 1
+					var j = i+1;
+					while(j < 10){ // j is 0
+						var weights = []; // [0, T).
+						// create 0 matrix
+						var cc = [];
+						for(var aa = 0; aa < 16; aa++){
+							var dd = [];
+							for(var bb = 0; bb < 16; bb++){
+								dd.push(0);
+							}
+							cc.push(dd);
+						}
+						weights.push(math.matrix(cc));
 
+
+						var errorsPer = 0;
+
+						for(var t = 0; t < T; t++){ // t
+							// for getting values use T mod 550
+							if(t % 2 == 0){ // actual digit is from i
+								var x = dataSet[i]["train"][(t % 550)];
+								var y = 1; // i
 							}
 							else { // actual digit is from j
-
+								var x = dataSet[j]["train"][(t % 550)];
+								var y = 0; // j
+							}
+							var tallyOne = 0;
+							var tallyZero = 0;	
+							var c_x_t = math.multiply(weights[weights.length-1],x) >= 0 ? 1 : 0;
+							if(c_x_t == 1)
+								tallyOne++;
+							else
+								tallyZero++;
+							
+							// take a vote
+							var TnNumCheck = Math.min(t+1,Tn);
+							for(var w = weights.length-TnNumCheck; w < weights.length; w++){
+								if(math.multiply(weights[w],x) >= 0)
+									tallyOne++;
+								else 
+									tallyZero++;
 							}
 
-							dataSet[i]
+
+							var yhat = tallyOne >= tallyZero ? 1 : 0;
+							if(yhat == y){ // correct
+								weights.push(weights[weights.length-1]);
+							}
+							else { // false
+								errorsPer++;
+								weights.push(math.add(weights[weights.length-1],math.multiply(y,x)));
+							}
+							
+
 						}
+						if(errors[i] == undefined)
+							errors[i] = [];
+						errors[i][j] = errorsPer;
 						j++;
 					}
 				}
 				return(errors);
 			}
+
+
 		</script>
 	</head>
 	<body>
